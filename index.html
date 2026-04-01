@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand Sentiment Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&display=swap');
 :root{--neg:#8B1A1A;--neu:#B8B0A8;--pos:#8FBFAB;--bg:#FAFAF8;--tx:#1A1A1A;--tx2:#555;--tx3:#888;--bdr:#E0DDD8;--acc:#C23028;--card:#fff}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
-
-/* HEADER */
 .hdr{background:linear-gradient(135deg,#1A1A1A,#2A2A2A);color:#fff;padding:24px 40px 20px}
 .hdr-tags{display:flex;gap:0;margin-bottom:10px}
 .tag{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:3px;text-transform:uppercase;padding:3px 14px;font-weight:700}
@@ -18,8 +17,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .hdr-row{display:flex;align-items:flex-start;justify-content:space-between}
 .hdr h1{font-size:19px;font-weight:700;line-height:1.35;max-width:820px}
 .dir{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;opacity:.55;white-space:nowrap;margin-top:4px}
-
-/* TABS + CONTROLS */
 .ctrl{padding:14px 40px;background:var(--card);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .tab-group{display:flex;gap:0;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden}
 .tab-btn{padding:8px 20px;font-size:11.5px;font-weight:700;cursor:pointer;background:transparent;border:none;font-family:'DM Sans',sans-serif;color:var(--tx2);transition:all .15s;white-space:nowrap}
@@ -31,16 +28,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .pills{display:flex;gap:4px;flex-wrap:wrap}
 .pill{padding:5px 13px;border:1.5px solid var(--bdr);border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;font-family:'DM Sans',sans-serif;color:var(--tx2);white-space:nowrap}
 .pill:hover{border-color:var(--acc);color:var(--acc)}.pill.active{background:var(--acc);color:#fff;border-color:var(--acc)}
-
-/* CHART */
+.upload-bar{padding:12px 40px;background:#F5F4F1;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.upload-btn{background:var(--tx);color:#fff;border:none;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;transition:background .15s}
+.upload-btn:hover{background:#333}
+.file-info{font-size:11px;color:var(--tx3);font-family:'Space Mono',monospace}
+.file-info .fname{color:var(--tx);font-weight:700}
+#fileInput{display:none}
 .chart-area{padding:32px 40px 20px}
 .chart-sub{font-size:12.5px;color:var(--tx2);margin-bottom:28px}.chart-sub span{font-weight:700;color:var(--tx)}
 .chart-frame{position:relative;padding-left:48px;padding-top:38px}
 .y-ax{position:absolute;left:0;top:0;bottom:0;width:44px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:6px;pointer-events:none}
 .y-t{font-family:'Space Mono',monospace;font-size:10px;color:var(--tx3);line-height:1;transform:translateY(-30px)}
 .grid{position:absolute;left:48px;right:0;top:0;bottom:0;pointer-events:none}
-.gl{position:absolute;left:0;right:0;height:1px;background:#EDECEA}
-.gl.dash{background:none;border-top:2px dashed var(--acc);opacity:.35}
+.gl{position:absolute;left:0;right:0;height:1px;background:#EDECEA}.gl.dash{background:none;border-top:2px dashed var(--acc);opacity:.35}
 .bars-row{display:flex;align-items:flex-end;justify-content:center;height:340px;position:relative;z-index:2;gap:5%}
 .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;max-width:130px;min-width:60px}
 .bar-n{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;margin-bottom:5px}
@@ -49,20 +49,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .seg.sn{background:var(--neg)}.seg.su{background:var(--neu)}.seg.sp{background:var(--pos);color:var(--tx)}
 .seg .lb{opacity:0;transition:opacity .25s .4s}.seg.show .lb{opacity:1}
 .blbl{margin-top:10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.25;min-height:28px;display:flex;align-items:center;justify-content:center}
-
-/* BOTTOM ROWS */
 .bot-row{display:flex;justify-content:center;gap:5%;padding-left:48px;margin-top:2px}
 .bot-cell{flex:1;max-width:130px;min-width:60px;text-align:center}
 .bot-title{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:1px}
 .bot-val{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700}
 .bot-val.red{color:var(--neg)}.bot-val.grn{color:#2E7D5B}
-
 .legend{display:flex;justify-content:center;gap:28px;margin-top:28px;padding-top:16px;border-top:1px solid var(--bdr)}
 .leg-i{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--tx2)}
 .leg-d{width:13px;height:13px;border-radius:2px}
 .note{text-align:center;margin-top:14px;font-size:9.5px;color:#aaa;font-style:italic;line-height:1.6}
-
-/* ── THEME CHART ── */
 .theme-frame{padding:32px 40px 20px}
 .theme-brands{display:flex;justify-content:center;gap:4%;flex-wrap:wrap}
 .theme-brand-group{display:flex;flex-direction:column;align-items:center;flex:1;min-width:160px;max-width:220px}
@@ -78,16 +73,40 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .theme-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:24px;padding-top:14px;border-top:1px solid var(--bdr)}
 .tl-i{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--tx2)}
 .tl-d{width:11px;height:11px;border-radius:2px}
-
-/* Theme colors */
-.tc0{background:#A8D5D0}.tc1{background:#7BAFB4}.tc2{background:#5A8A90}.tc3{background:#3D6B72}
-.tc4{background:#1A1A1A}.tc5{background:#555}.tc6{background:#94C4AF}
-
 .hidden{display:none}
+ 
+/* ── MODAL ── */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal{background:#fff;border-radius:12px;padding:32px 36px;max-width:620px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.modal .desc{font-size:12px;color:var(--tx3);margin-bottom:22px;line-height:1.5}
+.modal .sheet-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bdr)}
+.modal .sheet-row label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);min-width:50px}
+.modal .sheet-row select{flex:1;padding:7px 10px;border:1.5px solid var(--bdr);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px}
+.map-section{margin-bottom:18px}
+.map-section h3{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.map-section h3 .badge{font-size:9px;background:var(--acc);color:#fff;padding:2px 8px;border-radius:10px;font-weight:700}
+.map-section h3 .badge.opt{background:var(--neu);color:var(--tx)}
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.map-item{display:flex;flex-direction:column;gap:3px}
+.map-item label{font-size:10px;font-weight:600;color:var(--tx2)}
+.map-item select{padding:7px 10px;border:1.5px solid var(--bdr);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;background:#fff}
+.map-item select.mapped{border-color:#2E7D5B;background:#f0faf5}
+.theme-picks{margin-top:10px}
+.theme-picks .tp-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.theme-picks .tp-row input{width:16px;height:16px;accent-color:var(--acc)}
+.theme-picks .tp-row span{font-size:11px}
+.modal-actions{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
+.modal-actions button{padding:10px 24px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-cancel{background:#eee;color:var(--tx2)}.btn-cancel:hover{background:#ddd}
+.btn-go{background:var(--acc);color:#fff}.btn-go:hover{background:#a52520}
+.preview-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:10px}
+.preview-table th{background:#f5f4f1;padding:5px 8px;text-align:left;font-weight:700;border-bottom:1px solid var(--bdr)}
+.preview-table td{padding:4px 8px;border-bottom:1px solid #f0efec;color:var(--tx2)}
 </style>
 </head>
 <body>
-
+ 
 <div class="hdr">
   <div class="hdr-tags"><span class="tag tag-r">BRAND ENGAGEMENT</span><span class="tag tag-g">GOOGLE REVIEWS</span></div>
   <div class="hdr-row">
@@ -95,7 +114,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="dir">/ DIRECTIONAL</div>
   </div>
 </div>
-
+ 
+<div class="upload-bar">
+  <button class="upload-btn" onclick="document.getElementById('fileInput').click()">↑ Upload New Excel</button>
+  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleUpload(this)">
+  <div class="file-info" id="fileInfo">Using embedded dataset &middot; Upload a new Excel to replace data</div>
+</div>
+ 
 <div class="ctrl">
   <div class="tab-group">
     <button class="tab-btn active" data-view="overall">Overall Sentiment</button>
@@ -107,8 +132,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="pills" id="pills"></div>
   </div>
 </div>
-
-<!-- SENTIMENT CHART (used for both Overall & Market views) -->
+ 
 <div class="chart-area" id="sentView">
   <div class="chart-sub" id="chartSub">Brand mentions – by sentiment type</div>
   <div class="chart-frame">
@@ -125,49 +149,255 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
   </div>
   <div class="note">Note: Labels with less than 4% have been excluded from the chart. One verbatim can be tagged to multiple themes.<br>Source: Google Reviews</div>
 </div>
-
-<!-- THEME CHART -->
+ 
 <div class="theme-frame hidden" id="themeView">
   <div class="chart-sub" id="themeSub">Share of themes</div>
   <div class="theme-brands" id="themeBrands"></div>
   <div class="theme-legend" id="themeLegend"></div>
   <div class="note" style="margin-top:14px">Note: Labels with less than 4% have been excluded from the chart.<br>Source: Google Reviews</div>
 </div>
-
+ 
+<!-- COLUMN MAPPING MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modal">
+    <h2>Map Your Columns</h2>
+    <div class="desc">We found <strong id="modalRowCount">0</strong> rows across <strong id="modalSheetCount">1</strong> sheet(s). Select which sheet to use, then map your columns below.</div>
+ 
+    <div class="sheet-row">
+      <label>Sheet</label>
+      <select id="sheetSelect" onchange="onSheetChange()"></select>
+    </div>
+ 
+    <div id="previewArea"></div>
+ 
+    <div class="map-section">
+      <h3>Required Columns <span class="badge">REQUIRED</span></h3>
+      <div class="map-grid">
+        <div class="map-item"><label>Brand / Company</label><select id="mapBrand"></select></div>
+        <div class="map-item"><label>Sentiment</label><select id="mapSent"></select></div>
+        <div class="map-item"><label>Market / Region</label><select id="mapMarket"></select></div>
+      </div>
+    </div>
+ 
+    <div class="map-section">
+      <h3>Optional Columns <span class="badge opt">OPTIONAL</span></h3>
+      <div class="map-grid">
+        <div class="map-item"><label>Rating / Stars</label><select id="mapRating"></select></div>
+      </div>
+    </div>
+ 
+    <div class="map-section">
+      <h3>Theme Columns <span class="badge opt">OPTIONAL</span></h3>
+      <div class="desc" style="margin-bottom:8px;margin-top:-4px">Select columns that contain 0/1 theme tags. These enable the "Share of Themes" view.</div>
+      <div class="theme-picks" id="themePicks"></div>
+    </div>
+ 
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-go" onclick="applyMapping()">Load Data →</button>
+    </div>
+  </div>
+</div>
+ 
 <script>
-// ══════ DATA ══════
-const MARKET_SENT={"Blue Ridge":{"Overall NPS":{"total":110,"Positive":70,"Neutral":1,"Negative":39},"Honey Bucket":{"total":3,"Positive":3,"Neutral":0,"Negative":0},"National Construction Rentals":{"total":19,"Positive":13,"Neutral":0,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":58,"Positive":44,"Neutral":1,"Negative":13},"United Site Services":{"total":30,"Positive":10,"Neutral":0,"Negative":20}},"DMV / PA":{"Overall NPS":{"total":76,"Positive":49,"Neutral":2,"Negative":25},"National Construction Rentals":{"total":5,"Positive":2,"Neutral":0,"Negative":3},"United Rentals - Reliable Onsite Services":{"total":42,"Positive":34,"Neutral":1,"Negative":7},"United Site Services":{"total":29,"Positive":13,"Neutral":1,"Negative":15}},"Gulf South":{"Overall NPS":{"total":76,"Positive":46,"Neutral":3,"Negative":27},"Honey Bucket":{"total":15,"Positive":14,"Neutral":0,"Negative":1},"National Construction Rentals":{"total":15,"Positive":6,"Neutral":1,"Negative":8},"United Rentals - Reliable Onsite Services":{"total":22,"Positive":19,"Neutral":0,"Negative":3},"United Site Services":{"total":24,"Positive":7,"Neutral":2,"Negative":15}},"Los Angeles":{"Overall NPS":{"total":64,"Positive":29,"Neutral":3,"Negative":32},"National Construction Rentals":{"total":23,"Positive":4,"Neutral":2,"Negative":17},"United Rentals - Reliable Onsite Services":{"total":22,"Positive":19,"Neutral":0,"Negative":3},"United Site Services":{"total":19,"Positive":6,"Neutral":1,"Negative":12}},"Mid-West":{"Overall NPS":{"total":262,"Positive":215,"Neutral":4,"Negative":43},"National Construction Rentals":{"total":19,"Positive":9,"Neutral":0,"Negative":10},"United Rentals - Reliable Onsite Services":{"total":234,"Positive":203,"Neutral":4,"Negative":27},"United Site Services":{"total":9,"Positive":3,"Neutral":0,"Negative":6}},"Mountain":{"Overall NPS":{"total":280,"Positive":140,"Neutral":6,"Negative":134},"Honey Bucket":{"total":74,"Positive":43,"Neutral":2,"Negative":29},"National Construction Rentals":{"total":66,"Positive":62,"Neutral":1,"Negative":3},"United Rentals - Reliable Onsite Services":{"total":18,"Positive":17,"Neutral":0,"Negative":1},"United Site Services":{"total":122,"Positive":18,"Neutral":3,"Negative":101}},"New England":{"Overall NPS":{"total":281,"Positive":237,"Neutral":2,"Negative":42},"The Throne Depot":{"total":230,"Positive":222,"Neutral":2,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":3,"Positive":1,"Neutral":0,"Negative":2},"United Site Services":{"total":48,"Positive":14,"Neutral":0,"Negative":34}},"Nor Cal / Reno":{"Overall NPS":{"total":158,"Positive":67,"Neutral":4,"Negative":87},"Honey Bucket":{"total":26,"Positive":12,"Neutral":0,"Negative":14},"National Construction Rentals":{"total":34,"Positive":6,"Neutral":0,"Negative":28},"United Rentals - Reliable Onsite Services":{"total":21,"Positive":21,"Neutral":0,"Negative":0},"United Site Services":{"total":77,"Positive":28,"Neutral":4,"Negative":45}},"North Florida":{"Overall NPS":{"total":111,"Positive":72,"Neutral":1,"Negative":38},"United Rentals - Reliable Onsite Services":{"total":60,"Positive":57,"Neutral":0,"Negative":3},"United Site Services":{"total":51,"Positive":15,"Neutral":1,"Negative":35}},"North Texas":{"Overall NPS":{"total":120,"Positive":61,"Neutral":5,"Negative":54},"Honey Bucket":{"total":29,"Positive":13,"Neutral":3,"Negative":13},"National Construction Rentals":{"total":2,"Positive":0,"Neutral":0,"Negative":2},"United Rentals - Reliable Onsite Services":{"total":54,"Positive":40,"Neutral":0,"Negative":14},"United Site Services":{"total":35,"Positive":8,"Neutral":2,"Negative":25}},"PNW":{"Overall NPS":{"total":202,"Positive":71,"Neutral":7,"Negative":124},"Honey Bucket":{"total":80,"Positive":38,"Neutral":2,"Negative":40},"National Construction Rentals":{"total":25,"Positive":15,"Neutral":1,"Negative":9},"United Site Services":{"total":97,"Positive":18,"Neutral":4,"Negative":75}},"Socal / LV":{"Overall NPS":{"total":103,"Positive":62,"Neutral":5,"Negative":36},"National Construction Rentals":{"total":42,"Positive":23,"Neutral":1,"Negative":18},"United Rentals - Reliable Onsite Services":{"total":30,"Positive":27,"Neutral":1,"Negative":2},"United Site Services":{"total":31,"Positive":12,"Neutral":3,"Negative":16}},"South Florida":{"Overall NPS":{"total":44,"Positive":9,"Neutral":0,"Negative":35},"United Site Services":{"total":44,"Positive":9,"Neutral":0,"Negative":35}},"South Texas":{"Overall NPS":{"total":33,"Positive":23,"Neutral":2,"Negative":8},"Honey Bucket":{"total":3,"Positive":2,"Neutral":0,"Negative":1},"National Construction Rentals":{"total":4,"Positive":3,"Neutral":0,"Negative":1},"United Rentals - Reliable Onsite Services":{"total":18,"Positive":16,"Neutral":0,"Negative":2},"United Site Services":{"total":8,"Positive":2,"Neutral":2,"Negative":4}},"Southern VA / Carolinas":{"Overall NPS":{"total":117,"Positive":63,"Neutral":1,"Negative":53},"United Rentals - Reliable Onsite Services":{"total":54,"Positive":41,"Neutral":0,"Negative":13},"United Site Services":{"total":63,"Positive":22,"Neutral":1,"Negative":40}},"Tri-State NY":{"Overall NPS":{"total":860,"Positive":805,"Neutral":11,"Negative":44},"Call Ahead":{"total":718,"Positive":705,"Neutral":7,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":109,"Positive":91,"Neutral":3,"Negative":15},"United Site Services":{"total":33,"Positive":9,"Neutral":1,"Negative":23}}};
-
-const OVERALL_SENT={"Overall NPS":{"total":2897,"Positive":2019,"Neutral":57,"Negative":821},"Call Ahead":{"total":718,"Positive":705,"Neutral":7,"Negative":6},"Honey Bucket":{"total":230,"Positive":125,"Neutral":7,"Negative":98},"National Construction Rentals":{"total":254,"Positive":143,"Neutral":6,"Negative":105},"The Throne Depot":{"total":230,"Positive":222,"Neutral":2,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":745,"Positive":630,"Neutral":10,"Negative":105},"United Site Services":{"total":720,"Positive":194,"Neutral":25,"Negative":501}};
-
-const OVERALL_RATINGS={"Overall NPS":4.0,"Call Ahead":4.9,"Honey Bucket":3.4,"National Construction Rentals":3.6,"The Throne Depot":4.9,"United Rentals - Reliable Onsite Services":4.4,"United Site Services":2.7};
-const MARKET_RATINGS={"Blue Ridge":{"Overall NPS":3.7,"Honey Bucket":5.0,"United Site Services":2.9,"United Rentals - Reliable Onsite Services":4.1,"National Construction Rentals":4.0},"DMV / PA":{"Overall NPS":3.6,"United Rentals - Reliable Onsite Services":4.3,"National Construction Rentals":2.7,"United Site Services":3.0},"Gulf South":{"Overall NPS":3.7,"Honey Bucket":4.6,"United Rentals - Reliable Onsite Services":4.4,"National Construction Rentals":2.9,"United Site Services":3.1},"Los Angeles":{"Overall NPS":3.5,"United Rentals - Reliable Onsite Services":4.5,"National Construction Rentals":3.2,"United Site Services":2.8},"Mid-West":{"Overall NPS":4.4,"United Rentals - Reliable Onsite Services":4.6,"National Construction Rentals":2.9,"United Site Services":2.5},"Mountain":{"Overall NPS":3.3,"Honey Bucket":3.5,"United Site Services":2.2,"United Rentals - Reliable Onsite Services":4.8,"National Construction Rentals":4.8},"New England":{"Overall NPS":4.5,"United Site Services":2.8,"The Throne Depot":4.9,"United Rentals - Reliable Onsite Services":3.4},"Nor Cal / Reno":{"Overall NPS":3.1,"Honey Bucket":3.1,"United Site Services":3.1,"United Rentals - Reliable Onsite Services":4.8,"National Construction Rentals":2.2},"North Florida":{"Overall NPS":3.7,"United Rentals - Reliable Onsite Services":4.8,"United Site Services":2.6},"North Texas":{"Overall NPS":3.5,"Honey Bucket":3.3,"United Rentals - Reliable Onsite Services":4.0,"National Construction Rentals":3.0,"United Site Services":2.8},"PNW":{"Overall NPS":2.9,"Honey Bucket":3.2,"United Site Services":2.5,"United Rentals - Reliable Onsite Services":5.0,"National Construction Rentals":3.6},"Socal / LV":{"Overall NPS":3.9,"United Site Services":3.6,"United Rentals - Reliable Onsite Services":4.5,"National Construction Rentals":3.5},"South Florida":{"Overall NPS":2.4,"United Site Services":2.4},"South Texas":{"Overall NPS":4.1,"Honey Bucket":4.3,"United Rentals - Reliable Onsite Services":4.7,"National Construction Rentals":4.3,"United Site Services":2.9},"Southern VA / Carolinas":{"Overall NPS":3.5,"United Rentals - Reliable Onsite Services":4.2,"United Site Services":2.8},"Tri-State NY":{"Overall NPS":4.8,"United Rentals - Reliable Onsite Services":4.5,"Call Ahead":4.9,"United Site Services":2.5}};
-
-const THEME_DATA={"Blue Ridge":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":0,"Other":0},"total":6},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":0}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":8,"Communication & Order Process":3,"Other":0},"total":20},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":3,"Communication & Order Process":2,"Other":1},"total":12}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":26,"Delivery, Pickup & Onsite Execution":11,"Product Quality, Hygiene & Condition":14,"Pricing & Value Perception":1,"Overall Trust & Reliability":32,"Communication & Order Process":8,"Other":1},"total":93},"Negative":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":3,"Overall Trust & Reliability":5,"Communication & Order Process":6,"Other":2},"total":33}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":6,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":1,"Overall Trust & Reliability":5,"Communication & Order Process":2,"Other":0},"total":21},"Negative":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":12,"Product Quality, Hygiene & Condition":10,"Pricing & Value Perception":4,"Overall Trust & Reliability":9,"Communication & Order Process":5,"Other":1},"total":51}}},"DMV / PA":{"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":0},"total":5},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":1,"Communication & Order Process":1,"Other":0},"total":8}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":17,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":8,"Pricing & Value Perception":3,"Overall Trust & Reliability":28,"Communication & Order Process":8,"Other":2},"total":74},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":1,"Overall Trust & Reliability":3,"Communication & Order Process":3,"Other":1},"total":16}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":1,"Overall Trust & Reliability":7,"Communication & Order Process":5,"Other":1},"total":29},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":4,"Overall Trust & Reliability":5,"Communication & Order Process":6,"Other":1},"total":32}}},"Gulf South":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":0,"Overall Trust & Reliability":10,"Communication & Order Process":3,"Other":2},"total":29},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":1}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":0,"Overall Trust & Reliability":4,"Communication & Order Process":3,"Other":0},"total":11},"Negative":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":4,"Other":0},"total":19}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":7,"Pricing & Value Perception":1,"Overall Trust & Reliability":14,"Communication & Order Process":7,"Other":1},"total":42},"Negative":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":2,"Communication & Order Process":0,"Other":0},"total":5}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":5,"Communication & Order Process":2,"Other":1},"total":16},"Negative":{"counts":{"Customer Service & Responsiveness":8,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":3,"Overall Trust & Reliability":7,"Communication & Order Process":6,"Other":2},"total":39}}},"Los Angeles":{"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":1,"Other":0},"total":7},"Negative":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":11,"Product Quality, Hygiene & Condition":7,"Pricing & Value Perception":3,"Overall Trust & Reliability":7,"Communication & Order Process":5,"Other":2},"total":45}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":0,"Overall Trust & Reliability":16,"Communication & Order Process":5,"Other":0},"total":41},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":1,"Other":0},"total":6}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":2,"Other":0},"total":15},"Negative":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":7,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":6,"Overall Trust & Reliability":2,"Communication & Order Process":5,"Other":2},"total":34}}},"Mid-West":{"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":4,"Communication & Order Process":3,"Other":0},"total":14},"Negative":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":2,"Overall Trust & Reliability":3,"Communication & Order Process":4,"Other":1},"total":24}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":98,"Delivery, Pickup & Onsite Execution":59,"Product Quality, Hygiene & Condition":56,"Pricing & Value Perception":14,"Overall Trust & Reliability":154,"Communication & Order Process":35,"Other":5},"total":421},"Negative":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":18,"Product Quality, Hygiene & Condition":8,"Pricing & Value Perception":5,"Overall Trust & Reliability":11,"Communication & Order Process":9,"Other":3},"total":68}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":0},"total":5},"Negative":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":2,"Overall Trust & Reliability":2,"Communication & Order Process":2,"Other":1},"total":15}}},"Mountain":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":7,"Product Quality, Hygiene & Condition":12,"Pricing & Value Perception":2,"Overall Trust & Reliability":32,"Communication & Order Process":6,"Other":2},"total":75},"Negative":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":14,"Product Quality, Hygiene & Condition":11,"Pricing & Value Perception":3,"Overall Trust & Reliability":13,"Communication & Order Process":7,"Other":2},"total":64}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":24,"Delivery, Pickup & Onsite Execution":19,"Product Quality, Hygiene & Condition":13,"Pricing & Value Perception":2,"Overall Trust & Reliability":53,"Communication & Order Process":17,"Other":2},"total":130},"Negative":{"counts":{"Customer Service & Responsiveness":2,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":1,"Other":1},"total":6}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":11,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":0,"Overall Trust & Reliability":13,"Communication & Order Process":3,"Other":1},"total":34},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":0,"Other":0},"total":1}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":7,"Pricing & Value Perception":2,"Overall Trust & Reliability":12,"Communication & Order Process":2,"Other":2},"total":35},"Negative":{"counts":{"Customer Service & Responsiveness":48,"Delivery, Pickup & Onsite Execution":55,"Product Quality, Hygiene & Condition":37,"Pricing & Value Perception":32,"Overall Trust & Reliability":40,"Communication & Order Process":39,"Other":9},"total":260}}},"New England":{"The Throne Depot":{"Positive":{"counts":{"Customer Service & Responsiveness":62,"Delivery, Pickup & Onsite Execution":50,"Product Quality, Hygiene & Condition":64,"Pricing & Value Perception":11,"Overall Trust & Reliability":155,"Communication & Order Process":24,"Other":8},"total":374},"Negative":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":1},"total":14}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":0,"Other":0},"total":1},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":4}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":6,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":10,"Communication & Order Process":5,"Other":1},"total":29},"Negative":{"counts":{"Customer Service & Responsiveness":18,"Delivery, Pickup & Onsite Execution":22,"Product Quality, Hygiene & Condition":16,"Pricing & Value Perception":12,"Overall Trust & Reliability":13,"Communication & Order Process":9,"Other":3},"total":93}}},"Nor Cal / Reno":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":1,"Overall Trust & Reliability":9,"Communication & Order Process":6,"Other":4},"total":32},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":10,"Pricing & Value Perception":4,"Overall Trust & Reliability":3,"Communication & Order Process":2,"Other":3},"total":33}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":3,"Other":1},"total":11},"Negative":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":18,"Product Quality, Hygiene & Condition":14,"Pricing & Value Perception":8,"Overall Trust & Reliability":9,"Communication & Order Process":9,"Other":2},"total":74}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":14,"Product Quality, Hygiene & Condition":9,"Pricing & Value Perception":1,"Overall Trust & Reliability":11,"Communication & Order Process":3,"Other":0},"total":43},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":0}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":17,"Delivery, Pickup & Onsite Execution":6,"Product Quality, Hygiene & Condition":8,"Pricing & Value Perception":1,"Overall Trust & Reliability":15,"Communication & Order Process":5,"Other":1},"total":53},"Negative":{"counts":{"Customer Service & Responsiveness":23,"Delivery, Pickup & Onsite Execution":29,"Product Quality, Hygiene & Condition":12,"Pricing & Value Perception":14,"Overall Trust & Reliability":15,"Communication & Order Process":16,"Other":1},"total":110}}},"North Florida":{"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":23,"Delivery, Pickup & Onsite Execution":14,"Product Quality, Hygiene & Condition":20,"Pricing & Value Perception":3,"Overall Trust & Reliability":38,"Communication & Order Process":12,"Other":2},"total":112},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":1,"Overall Trust & Reliability":1,"Communication & Order Process":1,"Other":0},"total":7}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":2,"Overall Trust & Reliability":11,"Communication & Order Process":5,"Other":1},"total":29},"Negative":{"counts":{"Customer Service & Responsiveness":19,"Delivery, Pickup & Onsite Execution":26,"Product Quality, Hygiene & Condition":12,"Pricing & Value Perception":11,"Overall Trust & Reliability":10,"Communication & Order Process":9,"Other":3},"total":90}}},"North Texas":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":8,"Communication & Order Process":2,"Other":2},"total":25},"Negative":{"counts":{"Customer Service & Responsiveness":6,"Delivery, Pickup & Onsite Execution":11,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":3,"Overall Trust & Reliability":3,"Communication & Order Process":3,"Other":1},"total":32}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":0},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":4}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":28,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":10,"Pricing & Value Perception":3,"Overall Trust & Reliability":31,"Communication & Order Process":8,"Other":2},"total":90},"Negative":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":3,"Overall Trust & Reliability":6,"Communication & Order Process":5,"Other":3},"total":32}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":6,"Communication & Order Process":1,"Other":0},"total":15},"Negative":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":14,"Product Quality, Hygiene & Condition":7,"Pricing & Value Perception":7,"Overall Trust & Reliability":11,"Communication & Order Process":9,"Other":2},"total":64}}},"PNW":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":12,"Delivery, Pickup & Onsite Execution":6,"Product Quality, Hygiene & Condition":14,"Pricing & Value Perception":3,"Overall Trust & Reliability":25,"Communication & Order Process":5,"Other":2},"total":67},"Negative":{"counts":{"Customer Service & Responsiveness":19,"Delivery, Pickup & Onsite Execution":15,"Product Quality, Hygiene & Condition":18,"Pricing & Value Perception":9,"Overall Trust & Reliability":16,"Communication & Order Process":13,"Other":2},"total":92}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":9,"Communication & Order Process":5,"Other":0},"total":26},"Negative":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":2,"Overall Trust & Reliability":3,"Communication & Order Process":3,"Other":0},"total":21}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":5,"Product Quality, Hygiene & Condition":7,"Pricing & Value Perception":2,"Overall Trust & Reliability":14,"Communication & Order Process":3,"Other":1},"total":39},"Negative":{"counts":{"Customer Service & Responsiveness":33,"Delivery, Pickup & Onsite Execution":42,"Product Quality, Hygiene & Condition":31,"Pricing & Value Perception":16,"Overall Trust & Reliability":32,"Communication & Order Process":24,"Other":4},"total":182}}},"Socal / LV":{"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":6,"Pricing & Value Perception":2,"Overall Trust & Reliability":17,"Communication & Order Process":8,"Other":0},"total":47},"Negative":{"counts":{"Customer Service & Responsiveness":10,"Delivery, Pickup & Onsite Execution":13,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":3,"Overall Trust & Reliability":6,"Communication & Order Process":5,"Other":1},"total":42}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":13,"Delivery, Pickup & Onsite Execution":7,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":3,"Overall Trust & Reliability":22,"Communication & Order Process":5,"Other":1},"total":56},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":1,"Other":0},"total":3}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":1,"Overall Trust & Reliability":8,"Communication & Order Process":5,"Other":0},"total":26},"Negative":{"counts":{"Customer Service & Responsiveness":6,"Delivery, Pickup & Onsite Execution":12,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":3,"Overall Trust & Reliability":6,"Communication & Order Process":7,"Other":1},"total":40}}},"South Florida":{"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":1,"Overall Trust & Reliability":3,"Communication & Order Process":2,"Other":2},"total":17},"Negative":{"counts":{"Customer Service & Responsiveness":18,"Delivery, Pickup & Onsite Execution":19,"Product Quality, Hygiene & Condition":13,"Pricing & Value Perception":13,"Overall Trust & Reliability":16,"Communication & Order Process":8,"Other":3},"total":90}}},"South Texas":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":0,"Other":0},"total":3},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":1,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":1}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":1,"Other":0},"total":5},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":1,"Other":0},"total":2}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":8,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":2,"Overall Trust & Reliability":13,"Communication & Order Process":3,"Other":0},"total":34},"Negative":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":1,"Communication & Order Process":0,"Other":0},"total":4}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":2,"Communication & Order Process":0,"Other":0},"total":3},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":1,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":0},"total":11}}},"Southern VA / Carolinas":{"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":19,"Delivery, Pickup & Onsite Execution":11,"Product Quality, Hygiene & Condition":9,"Pricing & Value Perception":2,"Overall Trust & Reliability":28,"Communication & Order Process":12,"Other":1},"total":82},"Negative":{"counts":{"Customer Service & Responsiveness":8,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":5,"Overall Trust & Reliability":5,"Communication & Order Process":5,"Other":1},"total":31}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":11,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":1,"Overall Trust & Reliability":16,"Communication & Order Process":5,"Other":1},"total":43},"Negative":{"counts":{"Customer Service & Responsiveness":20,"Delivery, Pickup & Onsite Execution":27,"Product Quality, Hygiene & Condition":16,"Pricing & Value Perception":10,"Overall Trust & Reliability":16,"Communication & Order Process":14,"Other":2},"total":105}}},"Tri-State NY":{"Call Ahead":{"Positive":{"counts":{"Customer Service & Responsiveness":198,"Delivery, Pickup & Onsite Execution":110,"Product Quality, Hygiene & Condition":167,"Pricing & Value Perception":17,"Overall Trust & Reliability":481,"Communication & Order Process":57,"Other":16},"total":1046},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":1,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":2},"total":14}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":36,"Delivery, Pickup & Onsite Execution":16,"Product Quality, Hygiene & Condition":19,"Pricing & Value Perception":4,"Overall Trust & Reliability":72,"Communication & Order Process":18,"Other":2},"total":167},"Negative":{"counts":{"Customer Service & Responsiveness":7,"Delivery, Pickup & Onsite Execution":6,"Product Quality, Hygiene & Condition":4,"Pricing & Value Perception":6,"Overall Trust & Reliability":5,"Communication & Order Process":6,"Other":1},"total":35}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":3,"Pricing & Value Perception":0,"Overall Trust & Reliability":7,"Communication & Order Process":0,"Other":0},"total":15},"Negative":{"counts":{"Customer Service & Responsiveness":13,"Delivery, Pickup & Onsite Execution":16,"Product Quality, Hygiene & Condition":10,"Pricing & Value Perception":6,"Overall Trust & Reliability":10,"Communication & Order Process":6,"Other":2},"total":63}}},"__overall__":{"Call Ahead":{"Positive":{"counts":{"Customer Service & Responsiveness":198,"Delivery, Pickup & Onsite Execution":110,"Product Quality, Hygiene & Condition":167,"Pricing & Value Perception":17,"Overall Trust & Reliability":481,"Communication & Order Process":57,"Other":16},"total":1046},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":4,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":1,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":2},"total":14}},"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":43,"Delivery, Pickup & Onsite Execution":27,"Product Quality, Hygiene & Condition":41,"Pricing & Value Perception":6,"Overall Trust & Reliability":86,"Communication & Order Process":22,"Other":12},"total":237},"Negative":{"counts":{"Customer Service & Responsiveness":43,"Delivery, Pickup & Onsite Execution":49,"Product Quality, Hygiene & Condition":44,"Pricing & Value Perception":19,"Overall Trust & Reliability":35,"Communication & Order Process":25,"Other":8},"total":223}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":54,"Delivery, Pickup & Onsite Execution":33,"Product Quality, Hygiene & Condition":29,"Pricing & Value Perception":6,"Overall Trust & Reliability":106,"Communication & Order Process":45,"Other":3},"total":276},"Negative":{"counts":{"Customer Service & Responsiveness":52,"Delivery, Pickup & Onsite Execution":65,"Product Quality, Hygiene & Condition":41,"Pricing & Value Perception":20,"Overall Trust & Reliability":36,"Communication & Order Process":35,"Other":8},"total":257}},"The Throne Depot":{"Positive":{"counts":{"Customer Service & Responsiveness":62,"Delivery, Pickup & Onsite Execution":50,"Product Quality, Hygiene & Condition":64,"Pricing & Value Perception":11,"Overall Trust & Reliability":155,"Communication & Order Process":24,"Other":8},"total":374},"Negative":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":2,"Pricing & Value Perception":1,"Overall Trust & Reliability":2,"Communication & Order Process":1,"Other":1},"total":14}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":304,"Delivery, Pickup & Onsite Execution":159,"Product Quality, Hygiene & Condition":172,"Pricing & Value Perception":36,"Overall Trust & Reliability":473,"Communication & Order Process":132,"Other":18},"total":1294},"Negative":{"counts":{"Customer Service & Responsiveness":51,"Delivery, Pickup & Onsite Execution":51,"Product Quality, Hygiene & Condition":30,"Pricing & Value Perception":24,"Overall Trust & Reliability":41,"Communication & Order Process":37,"Other":11},"total":245}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":80,"Delivery, Pickup & Onsite Execution":42,"Product Quality, Hygiene & Condition":57,"Pricing & Value Perception":9,"Overall Trust & Reliability":121,"Communication & Order Process":42,"Other":8},"total":359},"Negative":{"counts":{"Customer Service & Responsiveness":224,"Delivery, Pickup & Onsite Execution":273,"Product Quality, Hygiene & Condition":166,"Pricing & Value Perception":127,"Overall Trust & Reliability":179,"Communication & Order Process":149,"Other":31},"total":1149}}}};
-
-const SHORT={'Overall NPS':'Overall NPS','United Site Services':'United Site\nServices','United Rentals - Reliable Onsite Services':'United\nRentals','Honey Bucket':'Honey\nBucket','National Construction Rentals':'National\nConstruction Rentals','Call Ahead':'Call\nAhead','The Throne Depot':'The Throne\nDepot'};
-const ORDER=['Overall NPS','United Site Services','United Rentals - Reliable Onsite Services','Honey Bucket','National Construction Rentals','Call Ahead','The Throne Depot'];
-const BRAND_ORDER=['United Site Services','United Rentals - Reliable Onsite Services','Honey Bucket','National Construction Rentals','Call Ahead','The Throne Depot'];
-const THEMES=['Customer Service & Responsiveness','Delivery, Pickup & Onsite Execution','Product Quality, Hygiene & Condition','Pricing & Value Perception','Overall Trust & Reliability','Communication & Order Process','Other'];
-const THEME_SHORT=['Customer Service\n& Responsiveness','Delivery, Pickup\n& Onsite Execution','Product Quality,\nHygiene & Condition','Pricing & Value\nPerception','Overall Trust\n& Reliability','Communication\n& Order Process','Other'];
-const TC=['#A8D5D0','#7BAFB4','#5A8A90','#3D6B72','#1A1A1A','#555','#94C4AF'];
-
+// ══════════ EMBEDDED DEFAULT DATA ══════════
+const DEFAULT_MARKET_SENT={"Blue Ridge":{"Overall NPS":{"total":110,"Positive":70,"Neutral":1,"Negative":39},"Honey Bucket":{"total":3,"Positive":3,"Neutral":0,"Negative":0},"National Construction Rentals":{"total":19,"Positive":13,"Neutral":0,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":58,"Positive":44,"Neutral":1,"Negative":13},"United Site Services":{"total":30,"Positive":10,"Neutral":0,"Negative":20}},"DMV / PA":{"Overall NPS":{"total":76,"Positive":49,"Neutral":2,"Negative":25},"National Construction Rentals":{"total":5,"Positive":2,"Neutral":0,"Negative":3},"United Rentals - Reliable Onsite Services":{"total":42,"Positive":34,"Neutral":1,"Negative":7},"United Site Services":{"total":29,"Positive":13,"Neutral":1,"Negative":15}},"Gulf South":{"Overall NPS":{"total":76,"Positive":46,"Neutral":3,"Negative":27},"Honey Bucket":{"total":15,"Positive":14,"Neutral":0,"Negative":1},"National Construction Rentals":{"total":15,"Positive":6,"Neutral":1,"Negative":8},"United Rentals - Reliable Onsite Services":{"total":22,"Positive":19,"Neutral":0,"Negative":3},"United Site Services":{"total":24,"Positive":7,"Neutral":2,"Negative":15}},"Los Angeles":{"Overall NPS":{"total":64,"Positive":29,"Neutral":3,"Negative":32},"National Construction Rentals":{"total":23,"Positive":4,"Neutral":2,"Negative":17},"United Rentals - Reliable Onsite Services":{"total":22,"Positive":19,"Neutral":0,"Negative":3},"United Site Services":{"total":19,"Positive":6,"Neutral":1,"Negative":12}},"Mid-West":{"Overall NPS":{"total":262,"Positive":215,"Neutral":4,"Negative":43},"National Construction Rentals":{"total":19,"Positive":9,"Neutral":0,"Negative":10},"United Rentals - Reliable Onsite Services":{"total":234,"Positive":203,"Neutral":4,"Negative":27},"United Site Services":{"total":9,"Positive":3,"Neutral":0,"Negative":6}},"Mountain":{"Overall NPS":{"total":280,"Positive":140,"Neutral":6,"Negative":134},"Honey Bucket":{"total":74,"Positive":43,"Neutral":2,"Negative":29},"National Construction Rentals":{"total":66,"Positive":62,"Neutral":1,"Negative":3},"United Rentals - Reliable Onsite Services":{"total":18,"Positive":17,"Neutral":0,"Negative":1},"United Site Services":{"total":122,"Positive":18,"Neutral":3,"Negative":101}},"New England":{"Overall NPS":{"total":281,"Positive":237,"Neutral":2,"Negative":42},"The Throne Depot":{"total":230,"Positive":222,"Neutral":2,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":3,"Positive":1,"Neutral":0,"Negative":2},"United Site Services":{"total":48,"Positive":14,"Neutral":0,"Negative":34}},"Nor Cal / Reno":{"Overall NPS":{"total":158,"Positive":67,"Neutral":4,"Negative":87},"Honey Bucket":{"total":26,"Positive":12,"Neutral":0,"Negative":14},"National Construction Rentals":{"total":34,"Positive":6,"Neutral":0,"Negative":28},"United Rentals - Reliable Onsite Services":{"total":21,"Positive":21,"Neutral":0,"Negative":0},"United Site Services":{"total":77,"Positive":28,"Neutral":4,"Negative":45}},"North Florida":{"Overall NPS":{"total":111,"Positive":72,"Neutral":1,"Negative":38},"United Rentals - Reliable Onsite Services":{"total":60,"Positive":57,"Neutral":0,"Negative":3},"United Site Services":{"total":51,"Positive":15,"Neutral":1,"Negative":35}},"North Texas":{"Overall NPS":{"total":120,"Positive":61,"Neutral":5,"Negative":54},"Honey Bucket":{"total":29,"Positive":13,"Neutral":3,"Negative":13},"National Construction Rentals":{"total":2,"Positive":0,"Neutral":0,"Negative":2},"United Rentals - Reliable Onsite Services":{"total":54,"Positive":40,"Neutral":0,"Negative":14},"United Site Services":{"total":35,"Positive":8,"Neutral":2,"Negative":25}},"PNW":{"Overall NPS":{"total":202,"Positive":71,"Neutral":7,"Negative":124},"Honey Bucket":{"total":80,"Positive":38,"Neutral":2,"Negative":40},"National Construction Rentals":{"total":25,"Positive":15,"Neutral":1,"Negative":9},"United Site Services":{"total":97,"Positive":18,"Neutral":4,"Negative":75}},"Socal / LV":{"Overall NPS":{"total":103,"Positive":62,"Neutral":5,"Negative":36},"National Construction Rentals":{"total":42,"Positive":23,"Neutral":1,"Negative":18},"United Rentals - Reliable Onsite Services":{"total":30,"Positive":27,"Neutral":1,"Negative":2},"United Site Services":{"total":31,"Positive":12,"Neutral":3,"Negative":16}},"South Florida":{"Overall NPS":{"total":44,"Positive":9,"Neutral":0,"Negative":35},"United Site Services":{"total":44,"Positive":9,"Neutral":0,"Negative":35}},"South Texas":{"Overall NPS":{"total":33,"Positive":23,"Neutral":2,"Negative":8},"Honey Bucket":{"total":3,"Positive":2,"Neutral":0,"Negative":1},"National Construction Rentals":{"total":4,"Positive":3,"Neutral":0,"Negative":1},"United Rentals - Reliable Onsite Services":{"total":18,"Positive":16,"Neutral":0,"Negative":2},"United Site Services":{"total":8,"Positive":2,"Neutral":2,"Negative":4}},"Southern VA / Carolinas":{"Overall NPS":{"total":117,"Positive":63,"Neutral":1,"Negative":53},"United Rentals - Reliable Onsite Services":{"total":54,"Positive":41,"Neutral":0,"Negative":13},"United Site Services":{"total":63,"Positive":22,"Neutral":1,"Negative":40}},"Tri-State NY":{"Overall NPS":{"total":860,"Positive":805,"Neutral":11,"Negative":44},"Call Ahead":{"total":718,"Positive":705,"Neutral":7,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":109,"Positive":91,"Neutral":3,"Negative":15},"United Site Services":{"total":33,"Positive":9,"Neutral":1,"Negative":23}}};
+const DEFAULT_OVERALL_SENT={"Overall NPS":{"total":2897,"Positive":2019,"Neutral":57,"Negative":821},"Call Ahead":{"total":718,"Positive":705,"Neutral":7,"Negative":6},"Honey Bucket":{"total":230,"Positive":125,"Neutral":7,"Negative":98},"National Construction Rentals":{"total":254,"Positive":143,"Neutral":6,"Negative":105},"The Throne Depot":{"total":230,"Positive":222,"Neutral":2,"Negative":6},"United Rentals - Reliable Onsite Services":{"total":745,"Positive":630,"Neutral":10,"Negative":105},"United Site Services":{"total":720,"Positive":194,"Neutral":25,"Negative":501}};
+const DEFAULT_OVERALL_RATINGS={"Overall NPS":4.0,"Call Ahead":4.9,"Honey Bucket":3.4,"National Construction Rentals":3.6,"The Throne Depot":4.9,"United Rentals - Reliable Onsite Services":4.4,"United Site Services":2.7};
+const DEFAULT_MARKET_RATINGS={"Blue Ridge":{"Overall NPS":3.7,"Honey Bucket":5.0,"United Site Services":2.9,"United Rentals - Reliable Onsite Services":4.1,"National Construction Rentals":4.0},"DMV / PA":{"Overall NPS":3.6,"United Rentals - Reliable Onsite Services":4.3,"National Construction Rentals":2.7,"United Site Services":3.0},"Gulf South":{"Overall NPS":3.7,"Honey Bucket":4.6,"United Rentals - Reliable Onsite Services":4.4,"National Construction Rentals":2.9,"United Site Services":3.1},"Los Angeles":{"Overall NPS":3.5,"United Rentals - Reliable Onsite Services":4.5,"National Construction Rentals":3.2,"United Site Services":2.8},"Mid-West":{"Overall NPS":4.4,"United Rentals - Reliable Onsite Services":4.6,"National Construction Rentals":2.9,"United Site Services":2.5},"Mountain":{"Overall NPS":3.3,"Honey Bucket":3.5,"United Site Services":2.2,"United Rentals - Reliable Onsite Services":4.8,"National Construction Rentals":4.8},"New England":{"Overall NPS":4.5,"United Site Services":2.8,"The Throne Depot":4.9,"United Rentals - Reliable Onsite Services":3.4},"Nor Cal / Reno":{"Overall NPS":3.1,"Honey Bucket":3.1,"United Site Services":3.1,"United Rentals - Reliable Onsite Services":4.8,"National Construction Rentals":2.2},"North Florida":{"Overall NPS":3.7,"United Rentals - Reliable Onsite Services":4.8,"United Site Services":2.6},"North Texas":{"Overall NPS":3.5,"Honey Bucket":3.3,"United Rentals - Reliable Onsite Services":4.0,"National Construction Rentals":3.0,"United Site Services":2.8},"PNW":{"Overall NPS":2.9,"Honey Bucket":3.2,"United Site Services":2.5,"United Rentals - Reliable Onsite Services":5.0,"National Construction Rentals":3.6},"Socal / LV":{"Overall NPS":3.9,"United Site Services":3.6,"United Rentals - Reliable Onsite Services":4.5,"National Construction Rentals":3.5},"South Florida":{"Overall NPS":2.4,"United Site Services":2.4},"South Texas":{"Overall NPS":4.1,"Honey Bucket":4.3,"United Rentals - Reliable Onsite Services":4.7,"National Construction Rentals":4.3,"United Site Services":2.9},"Southern VA / Carolinas":{"Overall NPS":3.5,"United Rentals - Reliable Onsite Services":4.2,"United Site Services":2.8},"Tri-State NY":{"Overall NPS":4.8,"United Rentals - Reliable Onsite Services":4.5,"Call Ahead":4.9,"United Site Services":2.5}};
+const DEFAULT_THEME_DATA={"Nor Cal / Reno":{"Honey Bucket":{"Positive":{"counts":{"Customer Service & Responsiveness":4,"Delivery, Pickup & Onsite Execution":3,"Product Quality, Hygiene & Condition":5,"Pricing & Value Perception":1,"Overall Trust & Reliability":9,"Communication & Order Process":6,"Other":4},"total":32},"Negative":{"counts":{"Customer Service & Responsiveness":3,"Delivery, Pickup & Onsite Execution":8,"Product Quality, Hygiene & Condition":10,"Pricing & Value Perception":4,"Overall Trust & Reliability":3,"Communication & Order Process":2,"Other":3},"total":33}},"National Construction Rentals":{"Positive":{"counts":{"Customer Service & Responsiveness":1,"Delivery, Pickup & Onsite Execution":2,"Product Quality, Hygiene & Condition":1,"Pricing & Value Perception":0,"Overall Trust & Reliability":3,"Communication & Order Process":3,"Other":1},"total":11},"Negative":{"counts":{"Customer Service & Responsiveness":14,"Delivery, Pickup & Onsite Execution":18,"Product Quality, Hygiene & Condition":14,"Pricing & Value Perception":8,"Overall Trust & Reliability":9,"Communication & Order Process":9,"Other":2},"total":74}},"United Rentals - Reliable Onsite Services":{"Positive":{"counts":{"Customer Service & Responsiveness":5,"Delivery, Pickup & Onsite Execution":14,"Product Quality, Hygiene & Condition":9,"Pricing & Value Perception":1,"Overall Trust & Reliability":11,"Communication & Order Process":3,"Other":0},"total":43},"Negative":{"counts":{"Customer Service & Responsiveness":0,"Delivery, Pickup & Onsite Execution":0,"Product Quality, Hygiene & Condition":0,"Pricing & Value Perception":0,"Overall Trust & Reliability":0,"Communication & Order Process":0,"Other":0},"total":0}},"United Site Services":{"Positive":{"counts":{"Customer Service & Responsiveness":17,"Delivery, Pickup & Onsite Execution":6,"Product Quality, Hygiene & Condition":8,"Pricing & Value Perception":1,"Overall Trust & Reliability":15,"Communication & Order Process":5,"Other":1},"total":53},"Negative":{"counts":{"Customer Service & Responsiveness":23,"Delivery, Pickup & Onsite Execution":29,"Product Quality, Hygiene & Condition":12,"Pricing & Value Perception":14,"Overall Trust & Reliability":15,"Communication & Order Process":16,"Other":1},"total":110}}}};
+ 
+// ══════════ ACTIVE DATA ══════════
+let MARKET_SENT=DEFAULT_MARKET_SENT,OVERALL_SENT=DEFAULT_OVERALL_SENT;
+let OVERALL_RATINGS=DEFAULT_OVERALL_RATINGS,MARKET_RATINGS=DEFAULT_MARKET_RATINGS;
+let THEME_DATA=DEFAULT_THEME_DATA;
+let BRAND_ORDER_DYN=['United Site Services','United Rentals - Reliable Onsite Services','Honey Bucket','National Construction Rentals','Call Ahead','The Throne Depot'];
+let SHORT={'Overall NPS':'Overall NPS','United Site Services':'United Site\nServices','United Rentals - Reliable Onsite Services':'United\nRentals','Honey Bucket':'Honey\nBucket','National Construction Rentals':'National\nConstruction Rentals','Call Ahead':'Call\nAhead','The Throne Depot':'The Throne\nDepot'};
+let DYNAMIC_THEMES=[];
+const ORDER_BASE=['Overall NPS','United Site Services','United Rentals - Reliable Onsite Services','Honey Bucket','National Construction Rentals','Call Ahead','The Throne Depot'];
+const TC=['#A8D5D0','#7BAFB4','#5A8A90','#3D6B72','#1A1A1A','#555','#94C4AF','#C4A882','#6B8F71','#AA7B6F'];
 const BAR_H=340,THEME_H=320;
-const markets=Object.keys(MARKET_SENT).sort();
-
-let currentView='overall', currentMarket='Nor Cal / Reno';
-
-// Build pills
-const pillsEl=document.getElementById('pills');
-markets.forEach(m=>{const b=document.createElement('button');b.className='pill';b.textContent=m;b.onclick=()=>{currentMarket=m;refresh()};pillsEl.appendChild(b)});
-
-// Tabs
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.onclick=()=>{currentView=btn.dataset.view;refresh()};
-});
-
+let currentView='overall',currentMarket=null;
+ 
+// ══════════ MODAL LOGIC ══════════
+let uploadedWB=null, uploadedFileName='', parsedSheets={}, currentHeaders=[], currentData=[];
+ 
+function handleUpload(input){
+  const file=input.files[0];if(!file)return;
+  uploadedFileName=file.name;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      uploadedWB=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      parsedSheets={};
+      uploadedWB.SheetNames.forEach(name=>{
+        parsedSheets[name]=XLSX.utils.sheet_to_json(uploadedWB.Sheets[name],{header:1});
+      });
+      openModal();
+    }catch(err){alert('Error reading file: '+err.message)}
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+ 
+function openModal(){
+  const sel=document.getElementById('sheetSelect');
+  sel.innerHTML='';
+  uploadedWB.SheetNames.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n+' ('+((parsedSheets[n]||[]).length-1)+' rows)';sel.appendChild(o)});
+  // Prefer "Final Output" if it exists
+  if(uploadedWB.SheetNames.includes('Final Output'))sel.value='Final Output';
+  document.getElementById('modalSheetCount').textContent=uploadedWB.SheetNames.length;
+  onSheetChange();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+ 
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden')}
+ 
+function onSheetChange(){
+  const sheetName=document.getElementById('sheetSelect').value;
+  const rows=parsedSheets[sheetName]||[];
+  // Find header row (first row with >=3 non-empty cells)
+  let hIdx=0;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    const filled=(rows[i]||[]).filter(c=>c!=null&&c.toString().trim()!=='').length;
+    if(filled>=3){hIdx=i;break}
+  }
+  currentHeaders=(rows[hIdx]||[]).map((h,i)=>h!=null?h.toString().trim():'Column_'+i);
+  currentData=rows.slice(hIdx+1);
+  document.getElementById('modalRowCount').textContent=currentData.length;
+ 
+  // Show preview
+  const preview=document.getElementById('previewArea');
+  let html='<table class="preview-table"><tr>';
+  currentHeaders.forEach(h=>{html+='<th>'+h+'</th>'});
+  html+='</tr>';
+  for(let i=0;i<Math.min(3,currentData.length);i++){
+    html+='<tr>';
+    currentHeaders.forEach((_,ci)=>{html+='<td>'+(currentData[i]&&currentData[i][ci]!=null?currentData[i][ci].toString().substring(0,30):'')+'</td>'});
+    html+='</tr>';
+  }
+  html+='</table>';
+  preview.innerHTML=html;
+ 
+  // Populate dropdowns
+  const none='<option value="-1">— Not mapped —</option>';
+  const opts=currentHeaders.map((h,i)=>'<option value="'+i+'">'+h+'</option>').join('');
+ 
+  ['mapBrand','mapSent','mapMarket','mapRating'].forEach(id=>{
+    document.getElementById(id).innerHTML=none+opts;
+  });
+ 
+  // Auto-guess mappings
+  autoGuess('mapBrand',['brand','company','brand name','competitor']);
+  autoGuess('mapSent',['sentiment','sentiment_label','sentiment label','polarity']);
+  autoGuess('mapMarket',['market','region','location','geo','area','zone']);
+  autoGuess('mapRating',['rating','reviewrating','review rating','star','stars','score']);
+ 
+  // Theme checkboxes
+  const tp=document.getElementById('themePicks');tp.innerHTML='';
+  currentHeaders.forEach((h,i)=>{
+    // Check if column looks like a theme (has 0/1 values)
+    const sample=currentData.slice(0,50).map(r=>r&&r[i]);
+    const vals=new Set(sample.filter(v=>v!=null).map(v=>v.toString()));
+    const isBinary=vals.size<=3&&(vals.has('1')||vals.has('0')||vals.has(1)||vals.has(0));
+    // Also check if name looks like a theme (not a standard column)
+    const lh=h.toLowerCase();
+    const isStd=['brand','sentiment','market','region','rating','url','id','state','city','date','text','review','name','uniqueid','detailsurl','brandid','reviewerid','numberreviews','full name'].some(s=>lh.includes(s));
+ 
+    if(isBinary&&!isStd){
+      const row=document.createElement('div');row.className='tp-row';
+      row.innerHTML='<input type="checkbox" checked data-idx="'+i+'"><span>'+h+'</span>';
+      tp.appendChild(row);
+    }
+  });
+  if(!tp.children.length)tp.innerHTML='<div style="font-size:11px;color:#aaa;font-style:italic">No binary (0/1) theme columns detected</div>';
+}
+ 
+function autoGuess(selectId,candidates){
+  const sel=document.getElementById(selectId);
+  const lHeaders=currentHeaders.map(h=>h.toLowerCase());
+  for(const c of candidates){
+    const idx=lHeaders.findIndex(h=>h.includes(c));
+    if(idx!==-1){sel.value=idx;return}
+  }
+}
+ 
+function applyMapping(){
+  const brandCol=parseInt(document.getElementById('mapBrand').value);
+  const sentCol=parseInt(document.getElementById('mapSent').value);
+  const marketCol=parseInt(document.getElementById('mapMarket').value);
+  const ratingCol=parseInt(document.getElementById('mapRating').value);
+ 
+  if(brandCol===-1||sentCol===-1||marketCol===-1){alert('Please map all 3 required columns: Brand, Sentiment, and Market.');return}
+ 
+  // Get theme columns
+  const themeIndices=[],themeNames=[];
+  document.querySelectorAll('#themePicks input[type=checkbox]:checked').forEach(cb=>{
+    const idx=parseInt(cb.dataset.idx);
+    themeIndices.push(idx);
+    themeNames.push(currentHeaders[idx]);
+  });
+  const hasThemes=themeIndices.length>0;
+ 
+  const data=currentData.filter(r=>r&&r[brandCol]!=null&&r[sentCol]!=null&&r[marketCol]!=null);
+  const hasThemeRow=r=>hasThemes&&themeIndices.some(i=>r[i]===1||r[i]==='1');
+  const mentionRows=data.filter(hasThemeRow);
+  const useMentions=hasThemes&&mentionRows.length>0;
+  const activeRows=useMentions?mentionRows:data;
+ 
+  const allBrands=[...new Set(activeRows.map(r=>r[brandCol].toString().trim()))].sort();
+  const allMarkets=[...new Set(activeRows.map(r=>r[marketCol].toString().trim()))].sort();
+ 
+  BRAND_ORDER_DYN=allBrands;
+  SHORT={'Overall NPS':'Overall NPS'};
+  allBrands.forEach(b=>{const parts=b.split(' - ');const words=parts[0].split(' ');if(words.length<=2)SHORT[b]=b;else{const mid=Math.ceil(words.length/2);SHORT[b]=words.slice(0,mid).join(' ')+'\n'+words.slice(mid).join(' ')}});
+  DYNAMIC_THEMES=themeNames;
+ 
+  function countSent(rows){const s={Positive:0,Neutral:0,Negative:0};rows.forEach(r=>{const v=(r[sentCol]||'').toString().trim();const vCap=v.charAt(0).toUpperCase()+v.slice(1).toLowerCase();if(s[vCap]!==undefined)s[vCap]++});return s}
+  function avgRat(rows){if(ratingCol===-1)return null;const vals=rows.map(r=>parseFloat(r[ratingCol])).filter(v=>!isNaN(v));return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10:null}
+ 
+  const newMS={},newMR={};
+  allMarkets.forEach(mkt=>{
+    const mRows=activeRows.filter(r=>r[marketCol].toString().trim()===mkt);
+    const md={};const mr={'Overall NPS':avgRat(data.filter(r=>r[marketCol].toString().trim()===mkt))};
+    const os=countSent(mRows);md['Overall NPS']={total:mRows.length,...os};
+    allBrands.forEach(b=>{const bRows=mRows.filter(r=>r[brandCol].toString().trim()===b);if(!bRows.length)return;md[b]={total:bRows.length,...countSent(bRows)};mr[b]=avgRat(data.filter(r=>r[brandCol].toString().trim()===b&&r[marketCol].toString().trim()===mkt))});
+    newMS[mkt]=md;newMR[mkt]=mr;
+  });
+ 
+  const newOS={},newOR={};
+  const os=countSent(activeRows);newOS['Overall NPS']={total:activeRows.length,...os};newOR['Overall NPS']=avgRat(data);
+  allBrands.forEach(b=>{const bRows=activeRows.filter(r=>r[brandCol].toString().trim()===b);if(!bRows.length)return;newOS[b]={total:bRows.length,...countSent(bRows)};newOR[b]=avgRat(data.filter(r=>r[brandCol].toString().trim()===b))});
+ 
+  const newTD={};
+  if(hasThemes){
+    const buildTheme=(rows,brand)=>{const bd={};['Positive','Negative'].forEach(sent=>{const subset=rows.filter(r=>{const v=(r[sentCol]||'').toString().trim();const vCap=v.charAt(0).toUpperCase()+v.slice(1).toLowerCase();return r[brandCol].toString().trim()===brand&&vCap===sent});const counts={};let total=0;themeNames.forEach((t,ti)=>{const c=subset.filter(r=>r[themeIndices[ti]]===1||r[themeIndices[ti]]==='1').length;counts[t]=c;total+=c});bd[sent]={counts,total}});return bd};
+    allMarkets.forEach(mkt=>{const mRows=activeRows.filter(r=>r[marketCol].toString().trim()===mkt);const md={};allBrands.forEach(b=>{if(mRows.some(r=>r[brandCol].toString().trim()===b))md[b]=buildTheme(mRows,b)});newTD[mkt]=md});
+    const od={};allBrands.forEach(b=>{od[b]=buildTheme(activeRows,b)});newTD['__overall__']=od;
+  }
+ 
+  MARKET_SENT=newMS;OVERALL_SENT=newOS;OVERALL_RATINGS=newOR;MARKET_RATINGS=newMR;
+  THEME_DATA=Object.keys(newTD).length?newTD:{};
+  currentMarket=allMarkets[0]||null;
+ 
+  document.getElementById('fileInfo').innerHTML='Loaded <span class="fname">'+uploadedFileName+'</span> · '+data.length+' reviews · '+(useMentions?activeRows.length+' mentions · ':'')+allMarkets.length+' markets · '+allBrands.length+' brands'+(hasThemes?' · '+themeNames.length+' themes':'');
+ 
+  closeModal();
+  buildPills();
+  refresh();
+}
+ 
+// ══════════ UI ══════════
+function buildPills(){
+  const p=document.getElementById('pills');p.innerHTML='';
+  Object.keys(MARKET_SENT).sort().forEach(m=>{const b=document.createElement('button');b.className='pill';b.textContent=m;b.onclick=()=>{currentMarket=m;refresh()};p.appendChild(b)});
+  if(!currentMarket){const mk=Object.keys(MARKET_SENT).sort();if(mk.length)currentMarket=mk[0]}
+}
+document.querySelectorAll('.tab-btn').forEach(btn=>{btn.onclick=()=>{currentView=btn.dataset.view;refresh()}});
+ 
 function pct(n,t){return t?Math.round(n/t*100):0}
-
+function getOrderFn(){return(a,b)=>{let ai=ORDER_BASE.indexOf(a),bi=ORDER_BASE.indexOf(b);if(ai<0)ai=BRAND_ORDER_DYN.indexOf(a)+100;if(bi<0)bi=BRAND_ORDER_DYN.indexOf(b)+100;if(ai<0)ai=999;if(bi<0)bi=999;return ai-bi}}
+ 
 function refresh(){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===currentView));
   document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active',p.textContent===currentMarket));
@@ -175,108 +405,67 @@ function refresh(){
   document.getElementById('mktGroup').classList.toggle('hidden',!showMkt);
   document.getElementById('sentView').classList.toggle('hidden',currentView==='themes');
   document.getElementById('themeView').classList.toggle('hidden',currentView!=='themes');
-
-  if(currentView==='overall') renderSentiment(OVERALL_SENT,OVERALL_RATINGS,'Brand mentions – by sentiment type');
-  else if(currentView==='market') renderSentiment(MARKET_SENT[currentMarket],MARKET_RATINGS[currentMarket],'Brand mentions – by sentiment type (<span>'+currentMarket+'</span>)');
-  else renderThemes();
+  if(currentView==='overall')renderSentiment(OVERALL_SENT,OVERALL_RATINGS,'Brand mentions – by sentiment type');
+  else if(currentView==='market'&&currentMarket)renderSentiment(MARKET_SENT[currentMarket],MARKET_RATINGS[currentMarket],'Brand mentions – by sentiment type (<span>'+currentMarket+'</span>)');
+  else if(currentView==='themes')renderThemes();
 }
-
+ 
 function renderSentiment(data,ratings,subtitle){
+  if(!data)return;
   document.getElementById('chartSub').innerHTML=subtitle;
-  const brands=Object.keys(data).sort((a,b)=>{const ai=ORDER.indexOf(a),bi=ORDER.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)});
+  const sortFn=getOrderFn();
+  const brands=Object.keys(data).sort(sortFn);
   const ranked=brands.filter(b=>b!=='Overall NPS').map(b=>({name:b,net:pct(data[b].Positive,data[b].total)-pct(data[b].Negative,data[b].total)})).sort((a,b)=>a.net-b.net);
   const worst=ranked.slice(0,2).map(r=>r.name.split(' - ')[0]);
-  const mktLabel=currentView==='market'?' in '+currentMarket+' market':'';
+  const mktLabel=currentView==='market'&&currentMarket?' in '+currentMarket+' market':'';
   document.getElementById('title').textContent=worst.join(' and ')+' lag the most'+mktLabel+' with heavily skewed negative feedback compared to peers';
-
   const barsRow=document.getElementById('barsRow'),ratingRow=document.getElementById('ratingRow'),netRow=document.getElementById('netRow');
   barsRow.innerHTML='';ratingRow.innerHTML='';netRow.innerHTML='';
-
   brands.forEach(brand=>{
-    const d=data[brand];
-    const posPct=pct(d.Positive,d.total),neuPct=pct(d.Neutral,d.total),negPct=100-posPct-neuPct,net=posPct-negPct;
-    const col=document.createElement('div');col.className='bar-col';
-    col.innerHTML='<div class="bar-n">'+d.total.toLocaleString()+'</div>';
+    const d=data[brand],posPct=pct(d.Positive,d.total),neuPct=pct(d.Neutral,d.total),negPct=100-posPct-neuPct,net=posPct-negPct;
+    const col=document.createElement('div');col.className='bar-col';col.innerHTML='<div class="bar-n">'+d.total.toLocaleString()+'</div>';
     const stack=document.createElement('div');stack.className='stack';stack.style.height=BAR_H+'px';
-    stack.appendChild(makeSeg('sn',negPct));stack.appendChild(makeSeg('su',neuPct));stack.appendChild(makeSeg('sp',posPct));
-    col.appendChild(stack);
-    const lbl=document.createElement('div');lbl.className='blbl';lbl.innerHTML=(SHORT[brand]||brand).replace(/\n/g,'<br>');col.appendChild(lbl);
-    barsRow.appendChild(col);
-
-    const rc=document.createElement('div');rc.className='bot-cell';
-    const avgR=ratings&&ratings[brand]!=null?ratings[brand]:'–';
-    rc.innerHTML='<div class="bot-title">Average rating</div><div class="bot-val" style="color:var(--tx)">'+avgR+'</div>';
-    ratingRow.appendChild(rc);
-
+    stack.appendChild(makeSeg('sn',negPct));stack.appendChild(makeSeg('su',neuPct));stack.appendChild(makeSeg('sp',posPct));col.appendChild(stack);
+    const lbl=document.createElement('div');lbl.className='blbl';lbl.innerHTML=(SHORT[brand]||brand).replace(/\n/g,'<br>');col.appendChild(lbl);barsRow.appendChild(col);
+    const rc=document.createElement('div');rc.className='bot-cell';const avgR=ratings&&ratings[brand]!=null?ratings[brand]:'–';
+    rc.innerHTML='<div class="bot-title">Average rating</div><div class="bot-val" style="color:var(--tx)">'+avgR+'</div>';ratingRow.appendChild(rc);
     const nc=document.createElement('div');nc.className='bot-cell';
-    nc.innerHTML='<div class="bot-title">Net Sentiment</div><div class="bot-val '+(net>=0?'grn':'red')+'">'+(net>=0?'+':'')+net+'%</div>';
-    netRow.appendChild(nc);
+    nc.innerHTML='<div class="bot-title">Net Sentiment</div><div class="bot-val '+(net>=0?'grn':'red')+'">'+(net>=0?'+':'')+net+'%</div>';netRow.appendChild(nc);
   });
   requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('.seg').forEach(s=>s.classList.add('show')),80));
 }
-
-function makeSeg(cls,pctVal){
-  const el=document.createElement('div');el.className='seg '+cls;el.style.height=(pctVal/100*BAR_H)+'px';
-  if(pctVal>=4){const lb=document.createElement('span');lb.className='lb';lb.textContent=pctVal+'%';el.appendChild(lb)}
-  return el;
-}
-
+function makeSeg(cls,p){const el=document.createElement('div');el.className='seg '+cls;el.style.height=(p/100*BAR_H)+'px';if(p>=4){const lb=document.createElement('span');lb.className='lb';lb.textContent=p+'%';el.appendChild(lb)}return el}
+ 
 function renderThemes(){
-  const mkt=currentMarket;
-  const td=THEME_DATA[mkt]||{};
-  document.getElementById('themeSub').innerHTML='Share of themes (<span>'+mkt+'</span>)';
-  document.getElementById('title').textContent='Theme breakdown by brand and sentiment – '+mkt;
-
+  if(!currentMarket)return;
+  const td=THEME_DATA[currentMarket]||{};
+  const themes=DYNAMIC_THEMES.length?DYNAMIC_THEMES:['Customer Service & Responsiveness','Delivery, Pickup & Onsite Execution','Product Quality, Hygiene & Condition','Pricing & Value Perception','Overall Trust & Reliability','Communication & Order Process','Other'];
+  document.getElementById('themeSub').innerHTML='Share of themes (<span>'+currentMarket+'</span>)';
+  document.getElementById('title').textContent='Theme breakdown by brand and sentiment – '+currentMarket;
   const container=document.getElementById('themeBrands');container.innerHTML='';
-  const brandsPresent=BRAND_ORDER.filter(b=>td[b]);
-
+  const brandsPresent=BRAND_ORDER_DYN.filter(b=>td[b]);
   brandsPresent.forEach(brand=>{
     const grp=document.createElement('div');grp.className='theme-brand-group';
     const pair=document.createElement('div');pair.className='theme-pair';
-
     ['Positive','Negative'].forEach(sent=>{
       const col=document.createElement('div');col.className='theme-col';
-      const sd=td[brand][sent];
+      const sd=td[brand]&&td[brand][sent]?td[brand][sent]:{counts:{},total:0};
       col.innerHTML='<div class="theme-n">'+(sd.total||0)+'</div><div class="theme-col-label">'+sent+'</div>';
-
-      if(!sd.total){
-        const nd=document.createElement('div');nd.className='no-data';nd.style.height=THEME_H+'px';nd.textContent='No '+sent.toLowerCase()+' verbatim';
-        col.appendChild(nd);
-      } else {
-        const stack=document.createElement('div');stack.className='theme-stack';stack.style.height=THEME_H+'px';
-        THEMES.forEach((t,i)=>{
-          const count=sd.counts[t]||0;
-          const p=pct(count,sd.total);
-          const seg=document.createElement('div');seg.className='theme-seg';
-          seg.style.height=(p/100*THEME_H)+'px';seg.style.background=TC[i];
-          if(i>=4)seg.style.color='#fff';
-          if(p>=4){const lb=document.createElement('span');lb.className='lb';lb.textContent=p+'%';seg.appendChild(lb)}
-          stack.appendChild(seg);
-        });
-        col.appendChild(stack);
-      }
+      if(!sd.total){const nd=document.createElement('div');nd.className='no-data';nd.style.height=THEME_H+'px';nd.textContent='No '+sent.toLowerCase()+' verbatim';col.appendChild(nd)}
+      else{const stack=document.createElement('div');stack.className='theme-stack';stack.style.height=THEME_H+'px';
+        themes.forEach((t,i)=>{const count=sd.counts[t]||0;const p=pct(count,sd.total);const seg=document.createElement('div');seg.className='theme-seg';seg.style.height=(p/100*THEME_H)+'px';seg.style.background=TC[i%TC.length];if(i>=4)seg.style.color='#fff';if(p>=4){const lb=document.createElement('span');lb.className='lb';lb.textContent=p+'%';seg.appendChild(lb)}stack.appendChild(seg)});
+        col.appendChild(stack)}
       pair.appendChild(col);
     });
-
-    grp.appendChild(pair);
-    const title=document.createElement('div');title.className='theme-brand-title';title.innerHTML=(SHORT[brand]||brand).replace(/\n/g,' ');
-    grp.appendChild(title);
-    container.appendChild(grp);
+    grp.appendChild(pair);const title=document.createElement('div');title.className='theme-brand-title';title.innerHTML=(SHORT[brand]||brand).replace(/\n/g,' ');grp.appendChild(title);container.appendChild(grp);
   });
-
-  // Legend
   const leg=document.getElementById('themeLegend');leg.innerHTML='';
-  THEMES.forEach((t,i)=>{
-    const item=document.createElement('div');item.className='tl-i';
-    item.innerHTML='<div class="tl-d" style="background:'+TC[i]+'"></div>'+t;
-    leg.appendChild(item);
-  });
-
+  themes.forEach((t,i)=>{const item=document.createElement('div');item.className='tl-i';item.innerHTML='<div class="tl-d" style="background:'+TC[i%TC.length]+'"></div>'+t;leg.appendChild(item)});
   requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('.theme-seg').forEach(s=>s.classList.add('show')),80));
 }
-
-// Init
-refresh();
+ 
+// INIT
+buildPills();currentMarket='Nor Cal / Reno';refresh();
 </script>
 </body>
 </html>
